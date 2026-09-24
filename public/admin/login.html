@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <title>Admin login · NIET</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/png" href="/assets/favicon.png" />
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/">
+      <img src="/assets/niet-logo.png" alt="NIET Greater Noida logo" />
+      <div class="brand-text"><b>Noida Institute of Engineering &amp; Technology</b><span>Administrator Portal</span></div>
+    </a>
+  </header>
+  <main class="login-wrap">
+    <form class="card login-card" id="login" novalidate>
+      <span class="badge">Admin</span>
+      <h2>Sign in</h2>
+      <p class="sub">Enter your administrator credentials to view feedback.</p>
+      <div class="field">
+        <label for="username">Username</label>
+        <input type="text" id="username" autocomplete="username" autofocus />
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" autocomplete="current-password" />
+      </div>
+      <button type="submit" id="btn"><span class="btn-label">Sign in</span><span class="spinner" hidden></span></button>
+      <p class="error banner" id="err" hidden></p>
+    </form>
+  </main>
+  <script type="module">
+    const $ = (id) => document.getElementById(id);
+    $('login').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      $('err').hidden = true;
+      $('btn').disabled = true; $('btn').querySelector('.spinner').hidden = false;
+      try {
+        const res = await fetch('/admin/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: $('username').value.trim(), password: $('password').value }),
+        });
+        if (res.ok) { location.replace('/admin'); return; }
+        $('err').textContent = res.status === 401 ? 'Incorrect username or password.' : 'Something went wrong. Try again.';
+      } catch {
+        $('err').textContent = 'Network error. Try again.';
+      }
+      $('err').hidden = false; $('password').value = ''; $('password').focus();
+      $('btn').disabled = false; $('btn').querySelector('.spinner').hidden = true;
+    });
+  </script>
+</body>
+</html>
