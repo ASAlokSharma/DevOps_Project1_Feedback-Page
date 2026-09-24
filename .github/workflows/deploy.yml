@@ -17,7 +17,7 @@ jobs:
       - name: Lint JS
         run: npx eslint public/app.js functions/api/feedback.js || true
       - name: Run validation tests
-        run: node --test tests/validation.test.js
+        run: node --test test/validation.test.js
 
   deploy:
     needs: lint-and-test
