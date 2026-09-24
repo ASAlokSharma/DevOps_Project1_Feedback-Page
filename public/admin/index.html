@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Feedback Admin</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>Feedback Admin</h1>
+    <p id="status" class="empty-state">Loading feedback...</p>
+    <table class="admin-table" id="admin-table" hidden>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Course</th>
+          <th>Feedback</th>
+          <th>Submitted</th>
+        </tr>
+      </thead>
+      <tbody id="admin-tbody"></tbody>
+    </table>
+  </main>
+
+  <script type="module">
+    const status = document.getElementById('status');
+    const table = document.getElementById('admin-table');
+    const tbody = document.getElementById('admin-tbody');
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    async function loadAll() {
+      try {
+        const res = await fetch('/admin/feedback');
+        if (!res.ok) {
+          status.textContent = 'Could not load feedback (check credentials).';
+          return;
+        }
+        const data = await res.json();
+
+        if (!data.length) {
+          status.textContent = 'No feedback submitted yet.';
+          return;
+        }
+
+        tbody.innerHTML = data.map(f => `
+          <tr>
+            <td>${escapeHtml(f.name)}</td>
+            <td>${escapeHtml(f.email)}</td>
+            <td>${escapeHtml(f.course)}</td>
+            <td>${escapeHtml(f.feedback)}</td>
+            <td>${new Date(f.created_at).toLocaleString()}</td>
+          </tr>
+        `).join('');
+
+        status.hidden = true;
+        table.hidden = false;
+      } catch {
+        status.textContent = 'Network error loading feedback.';
+      }
+    }
+
+    loadAll();
+  </script>
+</body>
+</html>

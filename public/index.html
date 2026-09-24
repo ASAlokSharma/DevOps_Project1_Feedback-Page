@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Feedback</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>Student Feedback</h1>
+    <form id="feedback-form">
+      <label>Name
+        <input type="text" id="name" required />
+      </label>
+      <label>Course
+        <input type="text" id="course" required />
+      </label>
+      <label>Feedback
+        <textarea id="feedback" rows="4" required></textarea>
+      </label>
+      <button type="submit">Submit</button>
+      <p id="form-error" class="error" hidden></p>
+    </form>
+
+    <section>
+      <h2>Recent Feedback</h2>
+      <ul id="feedback-list"></ul>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
