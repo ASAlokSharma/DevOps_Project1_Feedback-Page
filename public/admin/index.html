@@ -3,70 +3,97 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
   <title>Feedback Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../style.css" />
 </head>
 <body>
-  <main class="container">
-    <h1>Feedback Admin</h1>
-    <p id="status" class="empty-state">Loading feedback...</p>
-    <table class="admin-table" id="admin-table" hidden>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Course</th>
-          <th>Feedback</th>
-          <th>Submitted</th>
-        </tr>
-      </thead>
-      <tbody id="admin-tbody"></tbody>
-    </table>
+  <main class="admin">
+    <header class="admin-head">
+      <div><h1>Feedback dashboard</h1><p>All student submissions, newest first.</p></div>
+      <div class="actions">
+        <button class="ghost" id="refresh">↻ Refresh</button>
+        <button id="export">Export CSV</button>
+      </div>
+    </header>
+
+    <section class="stats">
+      <div class="stat"><b id="s-total">–</b><span>Total responses</span></div>
+      <div class="stat"><b id="s-week">–</b><span>Last 7 days</span></div>
+      <div class="stat"><b id="s-courses">–</b><span>Courses reviewed</span></div>
+    </section>
+
+    <div class="toolbar">
+      <input type="search" id="q" placeholder="Search name, email, course or feedback…" />
+      <select id="course"><option value="">All courses</option></select>
+    </div>
+
+    <div id="list" class="list"></div>
+    <p id="status" class="empty-state">Loading feedback…</p>
   </main>
 
   <script type="module">
-    const status = document.getElementById('status');
-    const table = document.getElementById('admin-table');
-    const tbody = document.getElementById('admin-tbody');
+    const $ = (id) => document.getElementById(id);
+    let all = [];
+    const esc = (s) => { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; };
+    const fmt = (d) => new Date(d).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 
-    function escapeHtml(str) {
-      const div = document.createElement('div');
-      div.textContent = str;
-      return div.innerHTML;
-    }
-
-    async function loadAll() {
+    async function load() {
+      $('status').hidden = false; $('status').textContent = 'Loading feedback…';
       try {
         const res = await fetch('/admin/feedback');
-        if (!res.ok) {
-          status.textContent = 'Could not load feedback (check credentials).';
-          return;
-        }
-        const data = await res.json();
-
-        if (!data.length) {
-          status.textContent = 'No feedback submitted yet.';
-          return;
-        }
-
-        tbody.innerHTML = data.map(f => `
-          <tr>
-            <td>${escapeHtml(f.name)}</td>
-            <td>${escapeHtml(f.email)}</td>
-            <td>${escapeHtml(f.course)}</td>
-            <td>${escapeHtml(f.feedback)}</td>
-            <td>${new Date(f.created_at).toLocaleString()}</td>
-          </tr>
-        `).join('');
-
-        status.hidden = true;
-        table.hidden = false;
+        if (!res.ok) throw new Error();
+        all = await res.json();
+        const courses = [...new Set(all.map((f) => f.course))].sort();
+        $('course').innerHTML = '<option value="">All courses</option>' + courses.map((c) => `<option>${esc(c)}</option>`).join('');
+        $('s-total').textContent = all.length;
+        $('s-week').textContent = all.filter((f) => Date.now() - new Date(f.created_at) < 7 * 864e5).length;
+        $('s-courses').textContent = courses.length;
+        render();
       } catch {
-        status.textContent = 'Network error loading feedback.';
+        $('list').innerHTML = '';
+        $('status').textContent = 'Could not load feedback. Check your login and try refreshing.';
       }
     }
 
-    loadAll();
+    function filtered() {
+      const q = $('q').value.trim().toLowerCase(), c = $('course').value;
+      return all.filter((f) => (!c || f.course === c) &&
+        (!q || [f.name, f.email, f.course, f.feedback].some((v) => (v || '').toLowerCase().includes(q))));
+    }
+
+    function render() {
+      const rows = filtered();
+      $('list').innerHTML = rows.map((f) => `
+        <article class="item">
+          <div class="item-top">
+            <div class="avatar">${esc((f.name || '?')[0].toUpperCase())}</div>
+            <div class="who"><b>${esc(f.name)}</b><a href="mailto:${esc(f.email)}">${esc(f.email)}</a></div>
+            <span class="tag">${esc(f.course)}</span>
+            <span class="when">${fmt(f.created_at)}</span>
+          </div>
+          <p>${esc(f.feedback)}</p>
+        </article>`).join('');
+      $('status').hidden = rows.length > 0;
+      if (!rows.length) $('status').textContent = all.length ? 'No results match your filters.' : 'No feedback submitted yet.';
+    }
+
+    function exportCsv() {
+      const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+      const head = ['Name', 'Email', 'Course', 'Feedback', 'Submitted'];
+      const lines = filtered().map((f) => [f.name, f.email, f.course, f.feedback, f.created_at].map(q).join(','));
+      const url = URL.createObjectURL(new Blob([[head.join(','), ...lines].join('\n')], { type: 'text/csv' }));
+      Object.assign(document.createElement('a'), { href: url, download: 'feedback.csv' }).click();
+      URL.revokeObjectURL(url);
+    }
+
+    $('q').addEventListener('input', render);
+    $('course').addEventListener('change', render);
+    $('refresh').addEventListener('click', load);
+    $('export').addEventListener('click', exportCsv);
+    load();
   </script>
 </body>
 </html>

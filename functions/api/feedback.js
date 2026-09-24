@@ -1,25 +1,20 @@
-export async function onRequestGet(context) {
-  const { SUPABASE_URL, SUPABASE_ANON_KEY } = context.env;
+import { validateFeedback } from '../../public/shared/validate.js';
 
-  const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/feedback?select=*&order=created_at.desc&limit=50`,
-    {
-      headers: {
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-      },
-    }
-  );
-  const data = await res.json();
-  return Response.json(data);
-}
+// No public GET: submitted feedback is only readable through the protected /admin area.
 
 export async function onRequestPost(context) {
   const { SUPABASE_URL, SUPABASE_ANON_KEY } = context.env;
-  const body = await context.request.json();
 
-  if (!body.name || !body.course || !body.feedback) {
-    return new Response('Missing fields', { status: 400 });
+  let body;
+  try {
+    body = await context.request.json();
+  } catch {
+    return new Response('Invalid JSON', { status: 400 });
+  }
+
+  const { valid, errors } = validateFeedback(body);
+  if (!valid) {
+    return Response.json({ errors }, { status: 400 });
   }
 
   const res = await fetch(`${SUPABASE_URL}/rest/v1/feedback`, {
@@ -31,9 +26,10 @@ export async function onRequestPost(context) {
       Prefer: 'return=minimal',
     },
     body: JSON.stringify({
-      name: body.name,
-      course: body.course,
-      feedback: body.feedback,
+      name: body.name.trim(),
+      email: body.email.trim().toLowerCase(),
+      course: body.course.trim(),
+      feedback: body.feedback.trim(),
     }),
   });
 

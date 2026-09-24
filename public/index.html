@@ -3,31 +3,59 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Student Feedback</title>
+  <title>Student Feedback · NIET</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <main class="container">
-    <h1>Student Feedback</h1>
-    <form id="feedback-form">
-      <label>Name
-        <input type="text" id="name" required />
-      </label>
-      <label>Course
-        <input type="text" id="course" required />
-      </label>
-      <label>Feedback
-        <textarea id="feedback" rows="4" required></textarea>
-      </label>
-      <button type="submit">Submit</button>
-      <p id="form-error" class="error" hidden></p>
-    </form>
+  <main class="shell">
+    <aside class="intro">
+      <span class="badge">Student Voice</span>
+      <h1>Help us make every course better.</h1>
+      <p>Your honest feedback goes directly to the faculty team. It takes about a minute, and only administrators can read it.</p>
+      <ul class="points">
+        <li><span>✓</span> Use your college email (@niet.co.in)</li>
+        <li><span>✓</span> Be specific: what worked, what didn't</li>
+        <li><span>✓</span> Your submission is private</li>
+      </ul>
+    </aside>
 
-    <section>
-      <h2>Recent Feedback</h2>
-      <ul id="feedback-list"></ul>
+    <section class="card" id="card">
+      <form id="feedback-form" novalidate>
+        <h2>Share your feedback</h2>
+        <div class="field">
+          <label for="name">Full name</label>
+          <input type="text" id="name" maxlength="100" placeholder="e.g. Aarav Sharma" autocomplete="name" />
+          <span class="error" id="err-name" hidden></span>
+        </div>
+        <div class="field">
+          <label for="email">College email</label>
+          <input type="email" id="email" placeholder="yourname@niet.co.in" autocomplete="email" />
+          <span class="error" id="err-email" hidden></span>
+        </div>
+        <div class="field">
+          <label for="course">Course</label>
+          <input type="text" id="course" maxlength="100" placeholder="e.g. Operating Systems" />
+          <span class="error" id="err-course" hidden></span>
+        </div>
+        <div class="field">
+          <label for="feedback">Your feedback</label>
+          <textarea id="feedback" rows="5" maxlength="500" placeholder="Tell us what you think…"></textarea>
+          <div class="meta"><span class="error" id="err-feedback" hidden></span><span class="count" id="count">0 / 500</span></div>
+        </div>
+        <button type="submit" id="submit-btn"><span class="btn-label">Submit feedback</span><span class="spinner" hidden></span></button>
+        <p id="form-error" class="error banner" hidden></p>
+      </form>
+
+      <div class="success" id="success" hidden>
+        <div class="check">✓</div>
+        <h2>Thank you!</h2>
+        <p>Your feedback has been submitted successfully.</p>
+        <button type="button" class="ghost" id="again">Submit another response</button>
+      </div>
     </section>
   </main>
-  <script src="app.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>

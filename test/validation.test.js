@@ -1,11 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { validateFeedback } from '../shared/validate.js';
+import { validateFeedback } from '../public/shared/validate.js';
 
 const validSample = {
   name: 'Alex Kim',
   course: 'CS101',
-  email: 'alex@example.com',
+  email: 'alex@niet.co.in',
   feedback: 'Great course, learned a lot.',
 };
 
@@ -15,38 +15,35 @@ test('accepts fully valid input', () => {
   assert.deepEqual(errors, {});
 });
 
-test('rejects malformed email addresses', () => {
-  const badEmails = [
-    'plainaddress',
-    'missing@domain',
-    '@missingusername.com',
-    'user@.com',
-    'user name@example.com',
-    '',
-  ];
-  for (const email of badEmails) {
+test('rejects malformed emails', () => {
+  for (const email of ['plainaddress', '@niet.co.in', 'user name@niet.co.in', 'user@', '']) {
     const { valid, errors } = validateFeedback({ ...validSample, email });
     assert.equal(valid, false, `expected "${email}" to be invalid`);
-    assert.ok(errors.email, `expected an email error for "${email}"`);
+    assert.ok(errors.email);
   }
 });
 
-test('accepts common valid email formats', () => {
-  const goodEmails = ['alex@example.com', 'a.kim+school@uni.edu', 'user@sub.domain.co'];
-  for (const email of goodEmails) {
+test('rejects emails from other domains', () => {
+  const bad = ['alex@gmail.com', 'alex@niet.com', 'alex@niet.co.in.evil.com',
+    'alex@fakeniet.co.in', 'alex@sub.niet.co.in', 'alex@niet.co.in@gmail.com'];
+  for (const email of bad) {
     const { valid, errors } = validateFeedback({ ...validSample, email });
+    assert.equal(valid, false, `expected "${email}" to be invalid`);
+    assert.ok(errors.email);
+  }
+});
+
+test('accepts @niet.co.in emails, case-insensitive', () => {
+  for (const email of ['alex@niet.co.in', 'a.kim+x@niet.co.in', 'ALEX@NIET.CO.IN']) {
+    const { valid } = validateFeedback({ ...validSample, email });
     assert.equal(valid, true, `expected "${email}" to be valid`);
-    assert.equal(errors.email, undefined);
   }
 });
 
 test('rejects empty required fields', () => {
   const { valid, errors } = validateFeedback({ name: '', course: '', email: '', feedback: '' });
   assert.equal(valid, false);
-  assert.ok(errors.name);
-  assert.ok(errors.course);
-  assert.ok(errors.email);
-  assert.ok(errors.feedback);
+  for (const f of ['name', 'course', 'email', 'feedback']) assert.ok(errors[f]);
 });
 
 test('treats whitespace-only input as empty', () => {
@@ -55,18 +52,8 @@ test('treats whitespace-only input as empty', () => {
   assert.ok(errors.name);
 });
 
-test('rejects feedback over 500 characters', () => {
-  const { valid, errors } = validateFeedback({ ...validSample, feedback: 'a'.repeat(501) });
-  assert.equal(valid, false);
-  assert.ok(errors.feedback);
-});
-
-test('rejects name or course over 100 characters', () => {
-  const long = 'a'.repeat(101);
-  const byName = validateFeedback({ ...validSample, name: long });
-  const byCourse = validateFeedback({ ...validSample, course: long });
-  assert.equal(byName.valid, false);
-  assert.ok(byName.errors.name);
-  assert.equal(byCourse.valid, false);
-  assert.ok(byCourse.errors.course);
+test('rejects over-length fields', () => {
+  assert.equal(validateFeedback({ ...validSample, feedback: 'a'.repeat(501) }).valid, false);
+  assert.equal(validateFeedback({ ...validSample, name: 'a'.repeat(101) }).valid, false);
+  assert.equal(validateFeedback({ ...validSample, course: 'a'.repeat(101) }).valid, false);
 });

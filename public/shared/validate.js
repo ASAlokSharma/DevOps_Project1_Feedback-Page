@@ -1,4 +1,5 @@
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const ALLOWED_DOMAIN = 'niet.co.in';
+const EMAIL_PATTERN = /^[^\s@]+@niet\.co\.in$/i;
 
 export function validateFeedback({ name, course, email, feedback }) {
   const errors = {};
@@ -18,7 +19,7 @@ export function validateFeedback({ name, course, email, feedback }) {
   if (!email || !email.trim()) {
     errors.email = 'Email is required.';
   } else if (!EMAIL_PATTERN.test(email.trim())) {
-    errors.email = 'Enter a valid email address.';
+    errors.email = 'Use your college email ending in @' + ALLOWED_DOMAIN + '.';
   }
 
   if (!feedback || !feedback.trim()) {

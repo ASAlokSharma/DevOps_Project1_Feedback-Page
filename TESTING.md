@@ -1,7 +1,7 @@
 # Test cases: Student Feedback App
 
 ## Automated (run in CI on every push/PR)
-`tests/validation.test.js` covers the email/length/required-field logic in `shared/validate.js`. Run locally only if you have Node installed: `node --test tests/validation.test.js`. Otherwise, just push — GitHub Actions runs it for you.
+`test/validation.test.js` covers the email/length/required-field logic in `shared/validate.js`. Run locally only if you have Node installed: `node --test test/validation.test.js`. Otherwise, just push — GitHub Actions runs it for you.
 
 ## Manual test cases (run against the deployed preview URL)
 
@@ -10,8 +10,8 @@
 | 1 | Email | `plainaddress` (no @) | Rejected — "Enter a valid email address." |
 | 2 | Email | `missing@domain` (no TLD) | Rejected |
 | 3 | Email | `@missingusername.com` | Rejected |
-| 4 | Email | `user name@example.com` (space) | Rejected |
-| 5 | Email | `alex@example.com` | Accepted |
+| 4 | Email | `user name` (space) | Rejected |
+| 5 | Email | `alex` | Accepted |
 | 6 | Name | empty | Rejected — "Name is required." |
 | 7 | Name | 101+ characters | Rejected — "Name must be under 100 characters." |
 | 8 | Name | `   ` (spaces only) | Rejected (treated as empty) |

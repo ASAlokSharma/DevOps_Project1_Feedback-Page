@@ -1,54 +1,82 @@
-const form = document.getElementById('feedback-form');
-const list = document.getElementById('feedback-list');
-const errorEl = document.getElementById('form-error');
+import { validateFeedback } from './shared/validate.js';
 
-async function loadFeedback() {
-  const res = await fetch('/api/feedback');
-  const data = await res.json();
-  list.innerHTML = data.map(f => `
-    <li>
-      <strong>${escapeHtml(f.name)}</strong> — ${escapeHtml(f.course)}
-      <p>${escapeHtml(f.feedback)}</p>
-    </li>
-  `).join('');
+const $ = (id) => document.getElementById(id);
+const form = $('feedback-form');
+const FIELDS = ['name', 'email', 'course', 'feedback'];
+const btn = $('submit-btn');
+
+const values = () => Object.fromEntries(FIELDS.map((f) => [f, $(f).value.trim()]));
+
+function showError(field, msg) {
+  const el = $(`err-${field}`);
+  el.textContent = msg || '';
+  el.hidden = !msg;
+  $(field).classList.toggle('invalid', Boolean(msg));
 }
+const showAll = (errors) => FIELDS.forEach((f) => showError(f, errors[f]));
+
+// Live feedback: validate a field when the user leaves it, clear the error as they fix it.
+for (const f of FIELDS) {
+  $(f).addEventListener('blur', () => {
+    if (!$(f).value.trim() && !$(f).dataset.touched) return;
+    $(f).dataset.touched = '1';
+    showError(f, validateFeedback(values()).errors[f]);
+  });
+  $(f).addEventListener('input', () => {
+    if ($(f).classList.contains('invalid')) showError(f, validateFeedback(values()).errors[f]);
+  });
+}
+
+$('feedback').addEventListener('input', (e) => {
+  const n = e.target.value.length;
+  $('count').textContent = `${n} / 500`;
+  $('count').classList.toggle('warn', n > 450);
+});
 
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
-  errorEl.hidden = true;
+  $('form-error').hidden = true;
 
-  const payload = {
-    name: document.getElementById('name').value.trim(),
-    course: document.getElementById('course').value.trim(),
-    feedback: document.getElementById('feedback').value.trim(),
-  };
-
-  if (!payload.name || !payload.course || !payload.feedback) {
-    errorEl.textContent = 'All fields are required.';
-    errorEl.hidden = false;
+  const payload = values();
+  const { valid, errors } = validateFeedback(payload);
+  showAll(errors);
+  if (!valid) {
+    $(FIELDS.find((f) => errors[f])).focus();
     return;
   }
 
-  const res = await fetch('/api/feedback', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-
-  if (!res.ok) {
-    errorEl.textContent = 'Something went wrong. Please try again.';
-    errorEl.hidden = false;
-    return;
+  btn.disabled = true;
+  btn.querySelector('.spinner').hidden = false;
+  btn.querySelector('.btn-label').textContent = 'Submitting…';
+  try {
+    const res = await fetch('/api/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (res.status === 400) {
+      const body = await res.json().catch(() => ({}));
+      showAll(body.errors || {});
+      return;
+    }
+    if (!res.ok) throw new Error('failed');
+    form.hidden = true;
+    $('success').hidden = false;
+  } catch {
+    $('form-error').textContent = 'Something went wrong. Please try again.';
+    $('form-error').hidden = false;
+  } finally {
+    btn.disabled = false;
+    btn.querySelector('.spinner').hidden = true;
+    btn.querySelector('.btn-label').textContent = 'Submit feedback';
   }
-
-  form.reset();
-  loadFeedback();
 });
 
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
-
-loadFeedback();
+$('again').addEventListener('click', () => {
+  form.reset();
+  FIELDS.forEach((f) => { showError(f, ''); delete $(f).dataset.touched; });
+  $('count').textContent = '0 / 500';
+  $('success').hidden = true;
+  form.hidden = false;
+  $('name').focus();
+});
